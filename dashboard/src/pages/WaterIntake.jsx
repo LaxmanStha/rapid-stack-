@@ -1,17 +1,90 @@
-import React from "react";
-import { useState } from "react";
 
-const WaterIntake = () => {
+import React from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+
+const API_BASE = `http://localhost/RSB/api`;
+
+export default function WaterTracker() {
+  const { token } = useAuth();
   const [logs, setLogs] = useState([]);
   const [customAmount, setCustomAmount] = useState("");
   const [dailyGoal, setDailyGoal] = useState(2000);
   const [total, setTotal] = useState(0);
 
-  const addEntry = (amount) => {
+  // Fetch water intake entries from API on component mount
+  useEffect(() => {
+    if (token) {
+      fetchWaterEntries();
+    }
+  }, [token]);
+
+  const fetchWaterEntries = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/water_intake.php?token=${token}`);
+      const data = await response.json();
+      if (data.success) {
+        setLogs(data.data);
+        calculateTotal(data.data);
+      } else {
+        console.error("Failed to fetch water entries:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching water entries:", error);
+    }
+  };
+
+  const calculateTotal = (entries) => {
+    const totalAmount = entries.reduce((sum, entry) => sum + entry.amount, 0);
+    setTotal(totalAmount);
+  };
+
+  const addEntryAPI = async (amount) => {
+    try {
+      const response = await fetch(`${API_BASE}/water_intake.php?token=${token}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: amount,
+          time: new Date().toLocaleTimeString(),
+          date: new Date().toDateString(),
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        await fetchWaterEntries(); // Refresh entries
+      } else {
+        console.error("Failed to add water entry:", data.error);
+      }
+    } catch (error) {
+      console.error("Error adding water entry:", error);
+    }
+  };
+
+  const deleteEntryAPI = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE}/water_intake.php?id=${id}&token=${token}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+      if (!data.success) {
+        console.error("Failed to delete water entry:", data.error);
+      }
+    } catch (error) {
+      console.error("Error deleting water entry:", error);
+    }
+  };
+
+  const addEntry = async (amount) => {
     if (!amount) return;
-    const newTotal = total + amount;
-    setTotal(newTotal);
-    setLogs([...logs, { amount, time: new Date().toLocaleTimeString() }]);
+    await addEntryAPI(amount);
+  };
+
+  const deleteEntry = async (id) => {
+    await deleteEntryAPI(id);
+    await fetchWaterEntries(); // Refresh entries
   };
 
   const progress = Math.min((total / dailyGoal) * 100, 100);
@@ -55,7 +128,7 @@ const WaterIntake = () => {
             value={customAmount}
             onChange={(e) => setCustomAmount(e.target.value)}
             className="w-full border rounded px-3 py-2 focus:ring-2"
-            style={{ borderColor: "#238b45", focusRingColor: "#238b45" }}
+            style={{ borderColor: "#238b45" }}
           />
           <input
             type="number"
@@ -63,7 +136,7 @@ const WaterIntake = () => {
             value={dailyGoal}
             onChange={(e) => setDailyGoal(Number(e.target.value))}
             className="w-full border rounded px-3 py-2 focus:ring-2"
-            style={{ borderColor: "#238b45", focusRingColor: "#238b45" }}
+            style={{ borderColor: "#238b45" }}
           />
           <button
             onClick={() => {
@@ -87,14 +160,26 @@ const WaterIntake = () => {
           </p>
         ) : (
           <ul className="space-y-2">
-            {logs.map((log, idx) => (
+            {logs.map((log) => (
               <li
-                key={idx}
-                className="border-b pb-2"
+                key={log.id}
+                className="border-b pb-2 flex items-center justify-between"
                 style={{ color: "#238b45" }}
               >
-                <span className="font-semibold">💧 {log.amount} ml</span> –{" "}
-                {log.time}
+                <span>
+                  <span className="font-semibold">💧 {log.amount} ml</span> –{" "}
+                  {new Date(`2000-01-01 ${log.time}`).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+                <button
+                  onClick={() => deleteEntry(log.id)}
+                  className="ml-4 text-red-500 hover:text-red-700 font-bold text-sm px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                  title="Delete entry"
+                >
+                  🗑️ Delete
+                </button>
               </li>
             ))}
           </ul>
@@ -102,6 +187,4 @@ const WaterIntake = () => {
       </div>
     </div>
   );
-};
-
-export default WaterIntake;
+}

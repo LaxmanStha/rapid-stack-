@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Water Intake API Test</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        button {
+            background: #238b45;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .output {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 Water Intake API Test</h1>
+
+        <h3>Step 1: Login First</h3>
+        <div>
+            <input type="email" id="email" placeholder="Email" value="test@example.com">
+            <input type="password" id="password" placeholder="Password" value="password123">
+            <button onclick="testLogin()">Login</button>
+        </div>
+
+        <h3>Step 2: Test Water API</h3>
+        <div>
+            <input type="number" id="amount" placeholder="Amount (ml)" value="250">
+            <button onclick="addWater()">Add Water</button>
+            <button onclick="fetchWater()">Fetch Water Logs</button>
+        </div>
+
+        <h3>Output:</h3>
+        <div class="output" id="output">Click a button to test...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost/RSB/api';
+        let token = localStorage.getItem('token');
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            output.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            document.getElementById('output').innerHTML = '';
+            log('Testing login...');
+
+            try {
+                const response = await fetch(`${API_BASE}/login.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+                log(`Response: ${JSON.stringify(result, null, 2)}`);
+
+                if (result.success && result.token) {
+                    token = result.token;
+                    localStorage.setItem('token', token);
+                    log('✓ Login successful! Token saved.', 'success');
+                    log(`Token: ${token.substring(0, 30)}...`);
+                } else {
+                    log('✗ Login failed: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                log('✗ Error: ' + error.message, 'error');
+            }
+        }
+
+        async function addWater() {
+            document.getElementById('output').innerHTML = '';
+
+            if (!token) {
+                log('✗ No token! Please login first.', 'error');
+                return;
+            }
+
+            const amount = parseInt(document.getElementById('amount').value);
+            log(`Adding ${amount}ml of water...`);
+            log(`Using token: ${token.substring(0, 30)}...`);
+
+            try {
+                const response = await fetch(`${API_BASE}/water_intake.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount })
+                });
+
+                log(`Response status: ${response.status}`);
+                const result = await response.json();
+                log(`Response: ${JSON.stringify(result, null, 2)}`);
+
+                if (result.success) {
+                    log('✓ Water added successfully!', 'success');
+                } else {
+                    log('✗ Failed: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                log('✗ Error: ' + error.message, 'error');
+            }
+        }
+
+        async function fetchWater() {
+            document.getElementById('output').innerHTML = '';
+
+            if (!token) {
+                log('✗ No token! Please login first.', 'error');
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            log(`Fetching water logs for ${today}...`);
+            log(`Using token: ${token.substring(0, 30)}...`);
+
+            try {
+                const response = await fetch(`${API_BASE}/water_intake.php?date=${today}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                log(`Response status: ${response.status}`);
+                const result = await response.json();
+                log(`Response: ${JSON.stringify(result, null, 2)}`);
+
+                if (result.success) {
+                    log(`✓ Found ${result.data.length} water entries`, 'success');
+                    const total = result.data.reduce((sum, log) => sum + parseInt(log.amount), 0);
+                    log(`Total: ${total} ml`);
+                } else {
+                    log('✗ Failed: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                log('✗ Error: ' + error.message, 'error');
+            }
+        }
+
+        // Check if token exists on load
+        if (token) {
+            log('Token found in localStorage: ' + token.substring(0, 30) + '...');
+        } else {
+            log('No token found. Please login first.');
+        }
+    </script>
+</body>
+
+</html>

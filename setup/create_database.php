@@ -55,6 +55,38 @@ try {
     $pdo->exec($sql);
     echo "✓ Sessions table created successfully.\n";
 
+    // Create exercise todos table
+    $sql = "CREATE TABLE IF NOT EXISTS `exercise_todos` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `text` VARCHAR(255) NOT NULL,
+        `time` INT NOT NULL,
+        `done` BOOLEAN DEFAULT FALSE,
+        `date` DATE NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+        INDEX `idx_user_date` (`user_id`, `date`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $pdo->exec($sql);
+    echo "✓ Exercise todos table created successfully.\n";
+
+    // Create water intake table
+    $sql = "CREATE TABLE IF NOT EXISTS `water_intake` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `amount` INT NOT NULL,
+        `time` TIME NOT NULL,
+        `date` DATE NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+        INDEX `idx_user_date` (`user_id`, `date`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $pdo->exec($sql);
+    echo "✓ Water intake table created successfully.\n";
+
     echo "\n✅ Database setup complete!\n";
 
 } catch (PDOException $e) {

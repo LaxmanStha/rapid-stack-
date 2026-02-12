@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
+// Always talk to PHP/XAMPP on localhost (not the React dev server origin)
+const API_BASE = `http://localhost/RSB/api`;
+const LOGIN_PAGE_URL = `http://localhost/RSB/public/index.html`;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -55,12 +58,30 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    window.location.href = 'http://localhost/RSB/public/index.html';
+  const logout = async () => {
+    console.log('AuthContext logout function called');
+    try {
+      const currentToken = token || localStorage.getItem('token');
+      if (currentToken) {
+        await fetch(`${API_BASE}/logout.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({ token: currentToken }),
+        }).catch(() => {});
+      }
+    } finally {
+      console.log('Clearing user and token');
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      // Send user back to PHP login form
+      console.log('Redirecting to login page with loggedOut flag');
+      window.location.href = `${LOGIN_PAGE_URL}?loggedOut=1`;
+    }
   };
 
   const value = {

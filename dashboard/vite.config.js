@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  colors: { ecoGray: "#F0EFEE" }, // custom name for your color },
+  server: {
+    port: 5173,
+  },
+  colors: { ecoGray: "#F0EFEE" },
   plugins: [tailwindcss()],
 });

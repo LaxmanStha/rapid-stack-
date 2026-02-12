@@ -182,7 +182,7 @@ async function apiCall(endpoint, data) {
   try {
     const url = `${API_BASE}/${endpoint}`;
     console.log('API Call:', url, data);
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -194,18 +194,18 @@ async function apiCall(endpoint, data) {
     console.log('API Response Status:', response.status);
     const result = await response.json();
     console.log('API Response Data:', result);
-    
+
     return { ok: response.ok, data: result };
   } catch (error) {
     console.error('API Error Details:', error);
-    
+
     let errorMessage = 'Network error. Please check your connection.';
     if (error.message) {
       errorMessage = error.message;
     } else if (error.toString()) {
       errorMessage = error.toString();
     }
-    
+
     return { ok: false, data: { error: errorMessage } };
   }
 }
@@ -251,7 +251,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
 
   setLoading('loginBtn', false);
 
-   if (ok && data.success) {
+  if (ok && data.success) {
     showSuccess('loginMessage', data.message || 'Login successful!');
 
     // Save auth data on PHP origin
@@ -259,7 +259,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     localStorage.setItem('user', JSON.stringify(data.user));
 
     // Also pass auth data to React app origin via URL params
-    const reactBaseUrl = 'http://localhost:5174';
+    const reactBaseUrl = 'http://localhost:5173';
     const tokenParam = encodeURIComponent(data.token);
     const userParam = encodeURIComponent(btoa(JSON.stringify(data.user)));
 
@@ -349,7 +349,7 @@ document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
     localStorage.setItem('user', JSON.stringify(data.user));
 
     // Also pass auth data to React app origin via URL params
-    const reactBaseUrl = 'http://localhost:5174';
+    const reactBaseUrl = 'http://localhost:5173';
     const tokenParam = data.token ? encodeURIComponent(data.token) : '';
     const userParam = encodeURIComponent(btoa(JSON.stringify(data.user)));
 
@@ -370,39 +370,17 @@ document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
 // ============================================
 // Dashboard
 // ============================================
-function showDashboard(user) {
-  switchPanel('dashboard');
-
-  // Set avatar
-  const avatar = document.getElementById('userAvatar');
-  const initial = document.getElementById('avatarInitial');
-  if (avatar && initial) {
-    avatar.style.background = `linear-gradient(135deg, ${user.avatar_color || '#6366f1'}, ${adjustColor(user.avatar_color || '#6366f1', -30)})`;
-    initial.textContent = (user.name || 'U').charAt(0).toUpperCase();
-  }
-
-  // Set user info
-  const nameEl = document.getElementById('dashUserName');
-  const emailEl = document.getElementById('dashUserEmail');
-  const idEl = document.getElementById('dashUserId');
-  const sinceEl = document.getElementById('dashMemberSince');
-
-  if (nameEl) nameEl.textContent = user.name || 'User';
-  if (emailEl) emailEl.textContent = user.email || '';
-  if (idEl) idEl.textContent = `#${user.id || '—'}`;
-  if (sinceEl) {
-    sinceEl.textContent = user.member_since
-      ? new Date(user.member_since).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-      : 'Today';
-  }
-}
+// ============================================
+// Dashboard - REMOVED
+// ============================================
+// function showDashboard(user) { ... }
 
 // ============================================
 // Google Login
 // ============================================
 function handleGoogleLogin() {
   console.log('Initializing Google login...');
-  
+
   // Configure Google Sign-In
   google.accounts.id.initialize({
     client_id: 'YOUR_GOOGLE_CLIENT_ID_HERE',
@@ -410,11 +388,11 @@ function handleGoogleLogin() {
     auto_select: false,
     cancel_on_tap_outside: true
   });
-  
+
   // Render Google Sign-In button
   google.accounts.id.prompt((notification) => {
     console.log('Google prompt notification:', notification);
-    
+
     if (notification.isNotDisplayed()) {
       console.error('Google Sign-In prompt not displayed');
       showError('loginMessage', 'Google login is temporarily unavailable');
@@ -428,7 +406,7 @@ function handleGoogleLogin() {
 
 function handleGoogleCallback(response) {
   console.log('Google login callback received:', response);
-  
+
   if (response.credential) {
     // Verify the ID token with our server
     verifyGoogleToken(response.credential);
@@ -439,19 +417,24 @@ function handleGoogleCallback(response) {
 
 async function verifyGoogleToken(credential) {
   console.log('Verifying Google token...');
-  
+
   const { ok, data } = await apiCall('google_login.php', { id_token: credential });
-  
+
   if (ok && data.success) {
     showSuccess('loginMessage', data.message || 'Google login successful!');
-    
+
     // Save auth data
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
-    
-    // Transition to dashboard
+
+    // Also pass auth data to React app origin via URL params
+    const reactBaseUrl = 'http://localhost:5173';
+    const tokenParam = encodeURIComponent(data.token);
+    const userParam = encodeURIComponent(btoa(JSON.stringify(data.user)));
+
+    // Redirect to React dashboard (Vite dev server)
     setTimeout(() => {
-      showDashboard(data.user);
+      window.location.href = `${reactBaseUrl}?token=${tokenParam}&user=${userParam}`;
     }, 800);
   } else {
     showError('loginMessage', data.error || 'Google login verification failed');
@@ -466,7 +449,7 @@ async function logout() {
 
   if (token) {
     // Best-effort server logout
-    apiCall('logout.php', { token }).catch(() => {});
+    apiCall('logout.php', { token }).catch(() => { });
   }
 
   localStorage.removeItem('token');
@@ -496,24 +479,31 @@ function adjustColor(hex, amount) {
 document.addEventListener('DOMContentLoaded', () => {
   // Create background particles
   createParticles();
-  
-   // Social Login Handlers
-    const googleBtn = document.querySelector('.btn-social.google');
-    const facebookBtn = document.querySelector('.btn-social.facebook');
-    
-    console.log('Google button element:', googleBtn);
-    console.log('Facebook button element:', facebookBtn);
-    
-    if (googleBtn) {
-      googleBtn.addEventListener('click', handleGoogleLogin);
-    }
-    
-    if (facebookBtn) {
-      facebookBtn.addEventListener('click', () => {
-        console.log('Facebook login clicked');
-        showError('loginMessage', 'Facebook login is coming soon!');
-      });
-    }
+
+  // If we came back here after an explicit logout from React (?loggedOut=1),
+  // always clear any stored session and stay on the login form.
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('loggedOut') === '1') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    switchPanel('login');
+    // Do NOT auto-redirect to React in this case
+    return;
+  }
+
+  // Social Login Handlers
+  const googleBtn = document.querySelector('.btn-social.google');
+  const facebookBtn = document.querySelector('.btn-social.facebook');
+
+  if (googleBtn) {
+    googleBtn.addEventListener('click', handleGoogleLogin);
+  }
+
+  if (facebookBtn) {
+    facebookBtn.addEventListener('click', () => {
+      showError('loginMessage', 'Facebook login is coming soon!');
+    });
+  }
 
   // Password strength listener
   const signupPassword = document.getElementById('signupPassword');
@@ -529,11 +519,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (savedUser && savedToken) {
     try {
-      const user = JSON.parse(savedUser);
       // Verify token is still valid
       apiCall('verify.php', { token: savedToken }).then(({ ok, data }) => {
         if (ok && data.success) {
-          showDashboard(data.user);
+          // Token valid, redirect to React app
+          const reactBaseUrl = 'http://localhost:5173';
+          const tokenParam = encodeURIComponent(savedToken);
+          const userParam = encodeURIComponent(btoa(savedUser));
+          window.location.href = `${reactBaseUrl}?token=${tokenParam}&user=${userParam}`;
         } else {
           // Token expired, clear and show login
           localStorage.removeItem('token');
@@ -541,8 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
           switchPanel('login');
         }
       }).catch(() => {
-        // If verification fails (e.g., no server), show dashboard with cached data
-        showDashboard(user);
+        // If verification fails (e.g., network error), clear session and show login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        switchPanel('login');
       });
     } catch {
       switchPanel('login');

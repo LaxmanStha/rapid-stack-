@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Water Intake Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #238b45;
+        }
+
+        button {
+            background: #238b45;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .output {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: orange;
+            font-weight: bold;
+        }
+
+        h2 {
+            color: #238b45;
+            border-bottom: 2px solid #238b45;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #333;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Water Intake Debug Tool</h1>
+
+        <div class="section">
+            <h2>1️⃣ Check Prerequisites</h2>
+            <button onclick="checkPrerequisites()">Run All Checks</button>
+            <div class="output" id="prereq-output">Click button to check...</div>
+        </div>
+
+        <div class="section">
+            <h2>2️⃣ Test API Endpoint Directly</h2>
+            <button onclick="testAPI()">Test GET (Fetch Water)</button>
+            <button onclick="testPOST()">Test POST (Add 100ml)</button>
+            <div class="output" id="api-output">Click button to test...</div>
+        </div>
+
+        <div class="section">
+            <h2>3️⃣ Check Database</h2>
+            <button onclick="window.open('http://localhost/phpmyadmin', '_blank')">Open phpMyAdmin</button>
+            <p>Check if table <code>water_intake</code> exists and has records</p>
+        </div>
+
+        <div class="section">
+            <h2>4️⃣ Manual SQL Query</h2>
+            <p>Run this in phpMyAdmin:</p>
+            <pre
+                style="background: #f0f0f0; padding: 10px; border-radius: 4px;">SELECT * FROM water_intake ORDER BY created_at DESC LIMIT 10;</pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost/RSB/api';
+        let log = (el, msg, type = 'info') => {
+            const colors = { error: 'red', success: 'green', warning: 'orange', info: 'black' };
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += `<span style="color: ${colors[type]}">[${time}] ${msg}</span>\n`;
+        };
+
+        async function checkPrerequisites() {
+            const output = document.getElementById('prereq-output');
+            output.innerHTML = '';
+
+            // Check 1: LocalStorage token
+            log(output, '=== CHECKING PREREQUISITES ===', 'info');
+            const token = localStorage.getItem('token');
+            if (token) {
+                log(output, `✓ Token found: ${token.substring(0, 30)}...`, 'success');
+            } else {
+                log(output, '✗ NO TOKEN FOUND! You need to login first.', 'error');
+                log(output, 'Go to http://localhost/RSB/public/index.html and login', 'warning');
+                return;
+            }
+
+            // Check 2: User info
+            const user = localStorage.getItem('user');
+            if (user) {
+                log(output, `✓ User info found: ${user.substring(0, 50)}`, 'success');
+            } else {
+                log(output, '⚠ No user info in localStorage', 'warning');
+            }
+
+            // Check 3: Can reach API
+            log(output, '\nChecking API accessibility...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/verify.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    log(output, `✓ Token is valid! User ID: ${result.user.id}`, 'success');
+                    log(output, `  User: ${result.user.name} (${result.user.email})`, 'info');
+                } else {
+                    log(output, '✗ Token is INVALID or EXPIRED!', 'error');
+                    log(output, 'Please logout and login again.', 'warning');
+                }
+            } catch (error) {
+                log(output, `✗ Cannot reach API: ${error.message}`, 'error');
+                log(output, 'Is XAMPP running? Check Apache service.', 'warning');
+            }
+
+            log(output, '\n=== CHECK COMPLETE ===', 'info');
+        }
+
+        async function testAPI() {
+            const output = document.getElementById('api-output');
+            output.innerHTML = '';
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                log(output, '✗ No token! Run prerequisites check first.', 'error');
+                return;
+            }
+
+            log(output, '=== TESTING GET REQUEST ===', 'info');
+            const today = new Date().toISOString().split('T')[0];
+            const url = `${API_BASE}/water_intake.php?date=${today}`;
+
+            log(output, `URL: ${url}`, 'info');
+            log(output, `Token: ${token.substring(0, 30)}...`, 'info');
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                log(output, `\nResponse Status: ${response.status}`, response.ok ? 'success' : 'error');
+                const result = await response.json();
+                log(output, `Response:\n${JSON.stringify(result, null, 2)}`, 'info');
+
+                if (result.success) {
+                    log(output, `\n✓ Found ${result.data.length} water entries for today`, 'success');
+                    if (result.data.length > 0) {
+                        result.data.forEach((entry, i) => {
+                            log(output, `  ${i + 1}. ${entry.amount}ml at ${entry.time}`, 'info');
+                        });
+                    }
+                } else {
+                    log(output, `✗ API Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(output, `✗ Request Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPOST() {
+            const output = document.getElementById('api-output');
+            output.innerHTML = '';
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                log(output, '✗ No token! Run prerequisites check first.', 'error');
+                return;
+            }
+
+            log(output, '=== TESTING POST REQUEST (Adding 100ml) ===', 'info');
+            const url = `${API_BASE}/water_intake.php`;
+
+            log(output, `URL: ${url}`, 'info');
+            log(output, `Token: ${token.substring(0, 30)}...`, 'info');
+            log(output, `Data: { amount: 100 }`, 'info');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount: 100 })
+                });
+
+                log(output, `\nResponse Status: ${response.status}`, response.ok ? 'success' : 'error');
+                const result = await response.json();
+                log(output, `Response:\n${JSON.stringify(result, null, 2)}`, 'info');
+
+                if (result.success) {
+                    log(output, '\n✓ Water entry added successfully!', 'success');
+                    log(output, `  Entry ID: ${result.data.id}`, 'info');
+                    log(output, '  Now fetching to verify...', 'info');
+
+                    // Verify by fetching
+                    setTimeout(() => testAPI(), 1000);
+                } else {
+                    log(output, `✗ Failed to add: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(output, `✗ Request Failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

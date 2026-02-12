@@ -184,6 +184,16 @@ class User {
     }
 
     /**
+     * Destroy all sessions for a user (logout everywhere)
+     */
+    public function destroyAllSessions($user_id) {
+        $query = "DELETE FROM sessions WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $user_id);
+        return $stmt->execute();
+    }
+
+    /**
      * Find user by email address
      */
     public static function findByEmail($email) {

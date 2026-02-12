@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import WaterIntake from "./pages/WaterIntake";
 import Exercise from "./pages/Exercise";
 import Tips from "./pages/Tips";
+import Scanner from "./pages/Scanner";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/water" element={<WaterIntake />} />
           <Route path="/exercise" element={<Exercise />} />
           <Route path="/tips" element={<Tips />} />
+          <Route path="/scanner" element={<Scanner />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

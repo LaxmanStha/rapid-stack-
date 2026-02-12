@@ -6,6 +6,7 @@
  */
 
 header('Content-Type: application/json');
+// Allow React dev server on :5174 to call this endpoint
 header('Access-Control-Allow-Origin: http://localhost:5174');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -44,8 +45,34 @@ if (!$token) {
 }
 
 try {
+    // Ensure any native PHP session is also destroyed
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
     $user = new User();
-    $user->destroySession($token);
+    
+    // Get user from token to find user_id for global logout
+    $userData = $user->getUserByToken($token);
+
+    if ($userData) {
+        // Destroy all sessions for this user (logout from all devices)
+        $user->destroyAllSessions($userData['id']);
+    } else {
+        // Fallback: just destroy this specific token
+        $user->destroySession($token);
+    }
+
+    // Clear any native PHP session data and cookie
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    session_destroy();
 
     http_response_code(200);
     echo json_encode(['success' => true, 'message' => 'Logged out successfully']);
