@@ -1,0 +1,26 @@
+{
+    "name": "health-care/login",
+    "description": "Health Care Login System",
+    "type": "project",
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "google/apiclient": "^2.12"
+    },
+    "autoload": {
+        "classmap": [
+            "models/",
+            "config/",
+            "api/"
+        ]
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "php -r \"copy('vendor/google/apiclient/src/Google/Client.php', 'vendor/google/apiclient/Client.php');\""
+        ],
+        "post-update-cmd": [
+            "php -r \"copy('vendor/google/apiclient/src/Google/Client.php', 'vendor/google/apiclient/Client.php');\""
+        ]
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
