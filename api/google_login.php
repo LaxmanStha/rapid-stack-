@@ -1,99 +1,60 @@
 <?php
 /**
- * Google Login API
- * Handles Google Sign-In verification and authentication
+ * Google Login API Endpoint
+ * Handles Google Sign-In token verification and user creation/login
  */
 
-require_once '../config/database.php';
-require_once '../models/User.php';
-
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Origin: http://localhost:5173');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
 
-// Get input data
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+require_once __DIR__ . '/../models/User.php';
+
+// Get POST data
 $data = json_decode(file_get_contents('php://input'), true);
 
-// Validate input
 if (!isset($data['id_token'])) {
     http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Missing Google ID token'
-    ]);
-    exit;
+    echo json_encode(['success' => false, 'error' => 'Missing Google ID token']);
+    exit();
 }
 
-try {
-    // Verify Google ID token
-    $client = new Google_Client(['client_id' => 'YOUR_GOOGLE_CLIENT_ID_HERE']);
-    $payload = $client->verifyIdToken($data['id_token']);
-    
-    if ($payload) {
-        // Extract user information from Google payload
-        $googleUserId = $payload['sub'];
-        $email = $payload['email'];
-        $name = $payload['name'];
-        $picture = $payload['picture'] ?? null;
-        $givenName = $payload['given_name'] ?? null;
-        $familyName = $payload['family_name'] ?? null;
-        
-        // Check if user already exists
-        $user = User::findByEmail($email);
-        
-        if ($user) {
-            // Update user's Google ID if not already present
-            if (empty($user->google_id)) {
-                $user->google_id = $googleUserId;
-                $user->save();
-            }
-        } else {
-            // Create new user if not exists
-            $user = new User();
-            $user->name = $name;
-            $user->email = $email;
-            $user->google_id = $googleUserId;
-            $user->avatar_url = $picture;
-            $user->avatar_color = '#' . substr(md5($email), 0, 6);
-            $user->member_since = date('Y-m-d H:i:s');
-            $user->save();
-        }
-        
-        // Generate auth token
-        $token = bin2hex(random_bytes(32));
-        $user->auth_token = $token;
-        $user->save();
-        
-        // Success response
-        http_response_code(200);
-        echo json_encode([
-            'success' => true,
-            'message' => 'Google login successful!',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar_url' => $user->avatar_url,
-                'avatar_color' => $user->avatar_color,
-                'member_since' => $user->member_since
-            ]
-        ]);
-    } else {
-        // Invalid token
-        http_response_code(401);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid Google ID token'
-        ]);
-    }
-} catch (Exception $e) {
-    // Handle errors
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Google login failed: ' . $e->getMessage()
-    ]);
+$id_token = $data['id_token'];
+
+// Verify the token with Google
+$url = "https://oauth2.googleapis.com/tokeninfo?id_token=" . $id_token;
+$response = @file_get_contents($url);
+
+if (!$response) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Invalid Google token']);
+    exit();
 }
-?>
+
+$payload = json_decode($response, true);
+
+if (isset($payload['error_description'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => $payload['error_description']]);
+    exit();
+}
+
+// Use the User model to handle login/signup logic
+$userModel = new User();
+$result = $userModel->loginWithGoogle($payload);
+
+if ($result['success']) {
+    http_response_code(200);
+    echo json_encode($result);
+} else {
+    http_response_code(500);
+    echo json_encode($result);
+}

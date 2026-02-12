@@ -157,9 +157,66 @@ class User {
     }
 
     /**
+     * Authenticate user via Google
+     */
+    public function loginWithGoogle($payload) {
+        $google_id = $payload['sub'];
+        $email = $payload['email'];
+        $name = $payload['name'];
+        $picture = $payload['picture'] ?? null;
+
+        // Try to find by Google ID
+        $user = self::findByGoogleId($google_id);
+
+        if (!$user) {
+            // Try to find by email
+            $user = self::findByEmail($email);
+            
+            if ($user) {
+                // Link Google ID to existing account
+                $user->google_id = $google_id;
+                if ($picture) $user->avatar_url = $picture;
+                $user->save();
+            } else {
+                // Create new user
+                $this->name = $name;
+                $this->email = $email;
+                $this->google_id = $google_id;
+                $this->avatar_url = $picture;
+                // Generate random color
+                $colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#fa709a', '#fee140', '#a18cd1'];
+                $this->avatar_color = $colors[array_rand($colors)];
+                
+                if (!$this->save()) {
+                    return ['success' => false, 'error' => 'Failed to create user'];
+                }
+                $user = $this;
+            }
+        }
+
+        // Generate session
+        $token = bin2hex(random_bytes(32));
+        $this->createSession($user->id, $token);
+
+        return [
+            'success' => true,
+            'token' => $token,
+            'user' => [
+                'id' => (int)$user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'google_id' => $user->google_id,
+                'avatar_color' => $user->avatar_color,
+                'avatar_url' => $user->avatar_url,
+                'member_since' => $user->created_at
+            ]
+        ];
+    }
+
+    /**
      * Create a session for the user
      */
-    private function createSession($user_id, $token) {
+    public function createSession($user_id, $token) {
         // Clean up expired sessions
         $this->conn->exec("DELETE FROM sessions WHERE expires_at < NOW()");
 

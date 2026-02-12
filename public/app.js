@@ -383,11 +383,29 @@ function handleGoogleLogin() {
 
   // Configure Google Sign-In
   google.accounts.id.initialize({
-    client_id: 'YOUR_GOOGLE_CLIENT_ID_HERE',
-    callback: handleGoogleCallback,
-    auto_select: false,
-    cancel_on_tap_outside: true
-  });
+    // CHECK: Replace with your actual Google Client ID from Google Cloud Console
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+
+    if(GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+    console.error('⚠️ Google Client ID not configured!');
+    showError('loginMessage', 'Configuration Error: Google Client ID missing. Please check console.');
+    alert('Please configure your Google Client ID in public/app.js lines ~386');
+    return;
+  }
+
+  // Configure Google Sign-In
+  try {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCallback,
+      auto_select: false,
+      cancel_on_tap_outside: true
+    });
+  } catch (error) {
+    console.error('Google Sign-In initialization failed:', error);
+    showError('loginMessage', 'Google Sign-In unavailable');
+    return;
+  }
 
   // Render Google Sign-In button
   google.accounts.id.prompt((notification) => {

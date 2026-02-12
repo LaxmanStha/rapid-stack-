@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Droplets, Dumbbell, Lightbulb, Menu, X } from "lucide-react";
+import { LayoutDashboard, Droplets, Dumbbell, Lightbulb, ChevronDown, Menu, X } from "lucide-react";
 import { MdQrCodeScanner } from "react-icons/md";
 import { useAuth } from "../../context/AuthContext";
 
@@ -9,10 +9,11 @@ const NavBar = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(false);
 
   const linkStyle = ({ isActive }) =>
-    `flex items-center gap-2 py-2 text-gray-900 transition duration-300 ${
-      isActive ? "font-semibold" : ""
+    `flex items-center gap-2 py-2 px-1 text-gray-900 transition duration-300 ${
+      isActive ? "text-green-500 font-semibold" : "hover:text-green-500"
     }`;
 
   const mobileLinkStyle = ({ isActive }) =>
@@ -22,6 +23,7 @@ const NavBar = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+  const setMobileMenuOpen = setIsMenuOpen;
 
   const handleLogoutClick = () => {
     console.log('handleLogoutClick called');
@@ -52,7 +54,7 @@ const NavBar = () => {
             </h2>
           </NavLink>
 
-          {/* Center - NavLinks (Desktop Only) */}
+           {/* Center - NavLinks (Desktop Only) */}
           <ul className="hidden lg:flex items-center space-x-6 absolute left-1/2 transform -translate-x-1/2">
             <li>
               <NavLink
@@ -75,7 +77,7 @@ const NavBar = () => {
                 })}
               >
                 <Droplets size={18} />
-                WaterIntake
+                Water
               </NavLink>
             </li>
             <li>
@@ -102,9 +104,51 @@ const NavBar = () => {
                 Tips
               </NavLink>
             </li>
+
+            {/* Dropdown - Services */}
+            <li className="relative">
+              <button
+                onClick={() => setOpenDropdown(!openDropdown)}
+                className="flex items-center gap-2 py-2 px-1 text-gray-900 hover:text-green-500 transition duration-300"
+              >
+                <span>Services</span>
+                <ChevronDown size={16} />
+              </button>
+              {openDropdown && (
+                <ul className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10">
+                  <li>
+                    <NavLink
+                      to="/symptom-checker"
+                      className="block px-4 py-2 hover:bg-green-50 hover:text-green-600 text-sm"
+                      onClick={() => setOpenDropdown(false)}
+                    >
+                      Health Checker AI
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/ambulance-booking"
+                      className="block px-4 py-2 hover:bg-green-50 hover:text-green-600 text-sm"
+                      onClick={() => setOpenDropdown(false)}
+                    >
+                      Ambulance Booking
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/support"
+                      className="block px-4 py-2 hover:bg-green-50 hover:text-green-600 text-sm"
+                      onClick={() => setOpenDropdown(false)}
+                    >
+                      Other
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
           </ul>
 
-          {/* Right Side - User + Logout (Desktop) & Hamburger (Mobile) */}
+           {/* Right Side - User + Logout (Desktop) & Hamburger (Mobile) */}
           <div className="flex items-center gap-3">
             {/* User Info & Logout - Desktop Only */}
             <div className="hidden md:flex items-center gap-4">
@@ -165,7 +209,7 @@ const NavBar = () => {
                   onClick={closeMenu}
                 >
                   <Droplets size={20} />
-                  WaterIntake
+                  Water Intake
                 </NavLink>
               </li>
               <li>
@@ -193,6 +237,62 @@ const NavBar = () => {
                   <Lightbulb size={20} />
                   Tips
                 </NavLink>
+              </li>
+
+              {/* Mobile Dropdown */}
+              <li>
+                <button
+                  onClick={() => setOpenDropdown(!openDropdown)}
+                  className="w-full flex items-center gap-2 py-2 px-3 rounded text-gray-900 hover:bg-gray-100"
+                >
+                  Services
+                  <ChevronDown
+                    size={16}
+                    className={`ml-auto transition ${
+                      openDropdown ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {openDropdown && (
+                  <ul className="mt-2 ml-4 border-l-2 border-gray-300 space-y-1">
+                    <li>
+                      <NavLink
+                        to="/appointment"
+                        className="block py-2 px-3 text-sm text-gray-700 hover:text-green-600 hover:bg-green-50 rounded"
+                        onClick={() => {
+                          setOpenDropdown(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Appointment Booking
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/ambulance-booking"
+                        className="block py-2 px-3 text-sm text-gray-700 hover:text-green-600 hover:bg-green-50 rounded"
+                        onClick={() => {
+                          setOpenDropdown(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Ambulance Booking
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/support"
+                        className="block py-2 px-3 text-sm text-gray-700 hover:text-green-600 hover:bg-green-50 rounded"
+                        onClick={() => {
+                          setOpenDropdown(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Other
+                      </NavLink>
+                    </li>
+                  </ul>
+                )}
               </li>
             </ul>
 
