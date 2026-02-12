@@ -1,8 +1,9 @@
 // src/pages/SymptomChecker.jsx
+import React from "react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import SymptomInput from "../components/ai/SymptomInput";
-import AIResponse from "../components/ai/AIResponse";
+import SymptomInput from "../components/Navbar/ai/SymptomInput";
+import AIResponse from "../components/Navbar/ai/AIResponse";
 
 export default function SymptomChecker() {
   const [result, setResult] = useState("");

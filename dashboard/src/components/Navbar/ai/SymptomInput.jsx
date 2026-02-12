@@ -1,6 +1,8 @@
 // src/components/ai/SymptomInput.jsx
+import React from "react";
+
 import { useState } from "react";
-import { analyzeSymptoms } from "../../services/aiService";
+import { analyzeSymptoms } from "../../../services/aiService";
 
 export default function SymptomInput({ setResult, setEmergency }) {
   const [symptoms, setSymptoms] = useState("");
