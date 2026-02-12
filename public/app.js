@@ -251,16 +251,21 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
 
   setLoading('loginBtn', false);
 
-  if (ok && data.success) {
+   if (ok && data.success) {
     showSuccess('loginMessage', data.message || 'Login successful!');
 
-    // Save auth data
+    // Save auth data on PHP origin
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
 
-    // Transition to dashboard
+    // Also pass auth data to React app origin via URL params
+    const reactBaseUrl = 'http://localhost:5174';
+    const tokenParam = encodeURIComponent(data.token);
+    const userParam = encodeURIComponent(btoa(JSON.stringify(data.user)));
+
+    // Redirect to React dashboard (Vite dev server)
     setTimeout(() => {
-      showDashboard(data.user);
+      window.location.href = `${reactBaseUrl}?token=${tokenParam}&user=${userParam}`;
     }, 800);
   } else {
     showError('loginMessage', data.error || 'Login failed. Please try again.');
@@ -337,15 +342,21 @@ document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
   if (ok && data.success) {
     showSuccess('signupMessage', data.message || 'Account created successfully!');
 
-    // Save auth data
+    // Save auth data on PHP origin
     if (data.token) {
       localStorage.setItem('token', data.token);
     }
     localStorage.setItem('user', JSON.stringify(data.user));
 
-    // Transition to dashboard
+    // Also pass auth data to React app origin via URL params
+    const reactBaseUrl = 'http://localhost:5174';
+    const tokenParam = data.token ? encodeURIComponent(data.token) : '';
+    const userParam = encodeURIComponent(btoa(JSON.stringify(data.user)));
+
+    // Redirect to React dashboard (Vite dev server)
     setTimeout(() => {
-      showDashboard(data.user);
+      const tokenQuery = tokenParam ? `&token=${tokenParam}` : '';
+      window.location.href = `${reactBaseUrl}?user=${userParam}${tokenQuery}`;
     }, 1000);
   } else {
     showError('signupMessage', data.error || 'Signup failed. Please try again.');

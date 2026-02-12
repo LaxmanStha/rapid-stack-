@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 
-export default function TipsDashboard() {
+const Tips = () => {
   const [tips, setTips] = useState([
     {
       title: "Switch to Energy-Efficient Appliances",
@@ -130,4 +130,6 @@ export default function TipsDashboard() {
       </button>
     </div>
   );
-}
+};
+
+export default Tips;

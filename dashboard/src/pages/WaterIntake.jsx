@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 
-export default function WaterTracker() {
+const WaterIntake = () => {
   const [logs, setLogs] = useState([]);
   const [customAmount, setCustomAmount] = useState("");
   const [dailyGoal, setDailyGoal] = useState(2000);
@@ -102,4 +102,6 @@ export default function WaterTracker() {
       </div>
     </div>
   );
-}
+};
+
+export default WaterIntake;

@@ -1,8 +1,10 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, Droplets, Dumbbell, Lightbulb } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const NavBar = () => {
+  const { user, logout } = useAuth();
   const linkStyle = ({ isActive }) =>
     `flex items-center gap-2 py-2 text-gray-900 transition duration-300 ${
       isActive ? "font-semibold" : ""
@@ -14,11 +16,11 @@ const NavBar = () => {
         {/* Left Side - Logo */}
         <NavLink to="/" className="flex items-center gap-2">
           <img
-            src="/logo.png"
-            alt="Eco Vital Logo"
-            className="h-6 w-6 sm:h-9 sm:w-9 object-contain"
+            src="https://www.svgrepo.com/show/499962/music.svg"
+            alt="Logo"
+            className="h-6 w-6 sm:h-9 sm:w-9"
           />
-          <span className="text-xl font-semibold text-gray-900">ECO VITAL</span>
+          <span className="text-xl font-semibold text-gray-900">Landwind</span>
         </NavLink>
 
         {/* Center - NavLinks */}
@@ -73,12 +75,15 @@ const NavBar = () => {
           </li>
         </ul>
 
-        {/* Right Side - ID + Logout */}
+        {/* Right Side - User + Logout */}
         <div className="flex items-center gap-4">
-          <span className="text-gray-900 font-medium">ID: 12345</span>
+          <span className="text-gray-900 font-medium">
+            {user?.name || "Guest"}
+          </span>
           <button
             className="text-white font-medium rounded-lg text-sm px-4 py-2 transition"
             style={{ backgroundColor: "#238b45" }}
+            onClick={logout}
           >
             Logout
           </button>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export default function ExerciseDashboard() {
+const Exercise = () => {
   const [todos, setTodos] = useState(() => {
     const saved = localStorage.getItem("exerciseTodos");
     return saved ? JSON.parse(saved) : [];
@@ -178,4 +178,6 @@ export default function ExerciseDashboard() {
       </div>
     </div>
   );
-}
+};
+
+export default Exercise;
