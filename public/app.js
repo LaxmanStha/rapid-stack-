@@ -491,6 +491,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // By default, always show the login panel when opening this page.
+  // We no longer auto-redirect based on any saved token here; React handles auth.
+  switchPanel('login');
+
   // Social Login Handlers
   const googleBtn = document.querySelector('.btn-social.google');
   const facebookBtn = document.querySelector('.btn-social.facebook');
@@ -511,37 +515,6 @@ document.addEventListener('DOMContentLoaded', () => {
     signupPassword.addEventListener('input', (e) => {
       checkPasswordStrength(e.target.value);
     });
-  }
-
-  // Check for existing session
-  const savedUser = localStorage.getItem('user');
-  const savedToken = localStorage.getItem('token');
-
-  if (savedUser && savedToken) {
-    try {
-      // Verify token is still valid
-      apiCall('verify.php', { token: savedToken }).then(({ ok, data }) => {
-        if (ok && data.success) {
-          // Token valid, redirect to React app
-          const reactBaseUrl = 'http://localhost:5173';
-          const tokenParam = encodeURIComponent(savedToken);
-          const userParam = encodeURIComponent(btoa(savedUser));
-          window.location.href = `${reactBaseUrl}?token=${tokenParam}&user=${userParam}`;
-        } else {
-          // Token expired, clear and show login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          switchPanel('login');
-        }
-      }).catch(() => {
-        // If verification fails (e.g., network error), clear session and show login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        switchPanel('login');
-      });
-    } catch {
-      switchPanel('login');
-    }
   }
 
   // Add input animations

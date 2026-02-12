@@ -19,17 +19,11 @@ export default function Dashboard() {
   const { token, user } = useAuth();
   const API_BASE = "http://localhost/RSB/api";
 
-  // Static data for exercise (will be replaced with real data if needed)
-  const weekExerciseData = [0, 30, 15, 45, 20, 10, 60];
-  const monthExerciseData = [
-    20, 30, 0, 45, 15, 30, 60, 25, 40, 10,
-    50, 35, 20, 55, 30, 0, 45, 60, 20, 35,
-    40, 25, 50, 15, 30, 20, 55, 45, 30, 25,
-  ];
-
   const [view, setView] = useState("week");
   const [weekWaterData, setWeekWaterData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [monthWaterData, setMonthWaterData] = useState(new Array(30).fill(0));
+  const [weekExerciseData, setWeekExerciseData] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [monthExerciseData, setMonthExerciseData] = useState(new Array(30).fill(0));
   const [loading, setLoading] = useState(true);
 
   // Generate labels dynamically
@@ -51,13 +45,14 @@ export default function Dashboard() {
   const exerciseData = isWeek ? weekExerciseData : monthExerciseData;
   const labels = isWeek ? weekLabels : monthLabels;
 
-  // Fetch real water intake data from database
+  // Fetch real water intake and exercise data from database
   useEffect(() => {
     if (!token) {
       setLoading(false);
       return;
     }
     fetchWaterData();
+    fetchExerciseData();
   }, [token, view]);
 
   const fetchWaterData = async () => {
@@ -72,10 +67,7 @@ export default function Dashboard() {
         date.setDate(date.getDate() - (days - 1 - i));
         const dateStr = date.toISOString().split('T')[0];
 
-        const response = await fetch(`${API_BASE}/water_intake.php?date=${dateStr}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const response = await fetch(`${API_BASE}/water_intake.php?date=${dateStr}&token=${token}`);
         const result = await response.json();
         if (result.success) {
           // Calculate total water in liters for that day
@@ -97,6 +89,40 @@ export default function Dashboard() {
       console.error("Failed to fetch water data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExerciseData = async () => {
+    try {
+      const days = isWeek ? 7 : 30;
+      const exerciseByDate = {};
+
+      // Fetch data for each day
+      for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (days - 1 - i));
+        const dateStr = date.toISOString().split('T')[0];
+
+        const response = await fetch(`${API_BASE}/exercise_todos.php?date=${dateStr}&token=${token}`);
+        const result = await response.json();
+        if (result.success) {
+          // Calculate total exercise time in minutes for completed todos
+          const totalMinutes = (result.data || []).filter(todo => todo.done).reduce((sum, todo) => sum + parseInt(todo.time), 0);
+          exerciseByDate[i] = totalMinutes;
+        } else {
+          exerciseByDate[i] = 0;
+        }
+      }
+
+      // Update state based on view
+      const dataArray = Array.from({ length: days }, (_, i) => exerciseByDate[i] || 0);
+      if (isWeek) {
+        setWeekExerciseData(dataArray);
+      } else {
+        setMonthExerciseData(dataArray);
+      }
+    } catch (error) {
+      console.error("Failed to fetch exercise data:", error);
     }
   };
 
