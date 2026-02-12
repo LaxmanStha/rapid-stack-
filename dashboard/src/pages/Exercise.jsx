@@ -44,7 +44,7 @@ export default function ExerciseDashboard() {
         body: JSON.stringify({
           text: task,
           time: time,
-          date: new Date().toDateString(),
+          date: new Date().toISOString().split('T')[0], // Use YYYY-MM-DD format
         }),
       });
       const data = await response.json();

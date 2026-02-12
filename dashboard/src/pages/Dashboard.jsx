@@ -58,32 +58,37 @@ export default function Dashboard() {
   const fetchWaterData = async () => {
     try {
       setLoading(true);
+      console.log('Fetching water data with token:', token);
       const days = isWeek ? 7 : 30;
-      const waterByDate = {};
 
-      // Fetch data for each day
-      for (let i = 0; i < days; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - (days - 1 - i));
-        const dateStr = date.toISOString().split('T')[0];
+      const response = await fetch(`${API_BASE}/water_intake.php?days=${days}&token=${token}`);
+      const result = await response.json();
+      console.log('Water API response:', result);
 
-        const response = await fetch(`${API_BASE}/water_intake.php?date=${dateStr}&token=${token}`);
-        const result = await response.json();
-        if (result.success) {
-          // Calculate total water in liters for that day
-          const totalMl = (result.data || []).reduce((sum, log) => sum + parseInt(log.amount), 0);
-          waterByDate[i] = totalMl / 1000; // Convert ml to liters
-        } else {
-          waterByDate[i] = 0;
+      if (result.success && Array.isArray(result.data)) {
+        // Create a map of date -> amount in liters
+        const waterMap = {};
+        result.data.forEach(item => {
+          waterMap[item.date] = parseFloat(item.total) / 1000;
+        });
+
+        // Generate array matching the labels order (oldest to newest)
+        const dataArray = [];
+        for (let i = 0; i < days; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - (days - 1 - i));
+          // Use local YYYY-MM-DD format
+          const dateStr = date.toLocaleDateString('en-CA');
+
+          dataArray.push(waterMap[dateStr] || 0);
         }
-      }
 
-      // Update state based on view
-      const dataArray = Array.from({ length: days }, (_, i) => waterByDate[i] || 0);
-      if (isWeek) {
-        setWeekWaterData(dataArray);
-      } else {
-        setMonthWaterData(dataArray);
+        console.log('Processed water data:', dataArray);
+        if (isWeek) {
+          setWeekWaterData(dataArray);
+        } else {
+          setMonthWaterData(dataArray);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch water data:", error);
@@ -94,6 +99,7 @@ export default function Dashboard() {
 
   const fetchExerciseData = async () => {
     try {
+      console.log('Fetching exercise data with token:', token);
       const days = isWeek ? 7 : 30;
       const exerciseByDate = {};
 
@@ -103,8 +109,11 @@ export default function Dashboard() {
         date.setDate(date.getDate() - (days - 1 - i));
         const dateStr = date.toISOString().split('T')[0];
 
+        console.log('Fetching exercise data for date:', dateStr);
         const response = await fetch(`${API_BASE}/exercise_todos.php?date=${dateStr}&token=${token}`);
         const result = await response.json();
+        console.log('API response for', dateStr, ':', result);
+
         if (result.success) {
           // Calculate total exercise time in minutes for completed todos
           const totalMinutes = (result.data || []).filter(todo => todo.done).reduce((sum, todo) => sum + parseInt(todo.time), 0);
@@ -116,6 +125,7 @@ export default function Dashboard() {
 
       // Update state based on view
       const dataArray = Array.from({ length: days }, (_, i) => exerciseByDate[i] || 0);
+      console.log('Exercise data to update:', dataArray);
       if (isWeek) {
         setWeekExerciseData(dataArray);
       } else {
@@ -181,8 +191,8 @@ export default function Dashboard() {
                 key={t}
                 onClick={() => setView(t.toLowerCase())}
                 className={`rounded-lg px-4 py-1.5 text-sm font-bold cursor-pointer transition-all duration-200 ${view === t.toLowerCase()
-                    ? "bg-linear-to-br from-green-700 to-green-500 text-white shadow-md"
-                    : "bg-transparent text-green-700 hover:bg-green-50"
+                  ? "bg-linear-to-br from-green-700 to-green-500 text-white shadow-md"
+                  : "bg-transparent text-green-700 hover:bg-green-50"
                   }`}
               >
                 {t}

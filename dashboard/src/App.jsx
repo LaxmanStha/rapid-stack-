@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import NavBar from "./components/Navbar/NavBar";
+import Layout from "./layout/Layout";
 import { AuthProvider } from "./context/AuthContext";
 
 import Dashboard from "./pages/Dashboard";
@@ -13,14 +13,15 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <NavBar />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/water" element={<WaterIntake />} />
-          <Route path="/exercise" element={<Exercise />} />
-          <Route path="/tips" element={<Tips />} />
-          <Route path="/scanner" element={<Scanner />} />
-        </Routes>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/water" element={<WaterIntake />} />
+            <Route path="/exercise" element={<Exercise />} />
+            <Route path="/tips" element={<Tips />} />
+            <Route path="/scanner" element={<Scanner />} />
+          </Routes>
+        </Layout>
       </BrowserRouter>
     </AuthProvider>
   );

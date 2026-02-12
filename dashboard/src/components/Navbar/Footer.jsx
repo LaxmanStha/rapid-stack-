@@ -9,7 +9,7 @@ const Footer = () => {
           {/* Brand - Full width on mobile */}
           <div className="col-span-2 sm:col-span-2 md:col-span-1">
             <div className="flex flex-row items-center gap-2 mb-3">
-              <img src="src/assets/logo (1).png" className="w-10 h-10 sm:w-15 sm:h-15" />
+              <img src="src/assets/logo1.png" className="w-10 h-10 sm:w-15 sm:h-15" />
               <h2 className="text-yellow-100 text-lg sm:text-xl font-semibold tracking-tight flex flex-col">
                 <span className="text-green-500 text-xl sm:text-2xl">Eco-Vital</span>
                 HealthCare

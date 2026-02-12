@@ -50,8 +50,13 @@ switch ($method) {
     case 'GET':
         $date = $_GET['date'] ?? null;
         $total = isset($_GET['total']) ? filter_var($_GET['total'], FILTER_VALIDATE_BOOLEAN) : false;
+        $days = $_GET['days'] ?? null;
         
-        if ($total && $date) {
+        if ($days) {
+            $stats = $waterIntake->getDailyStats($userId, $days);
+            http_response_code(200);
+            echo json_encode(['success' => true, 'data' => $stats]);
+        } elseif ($total && $date) {
             $result = $waterIntake->getTotalByUserIdAndDate($userId, $date);
             http_response_code(200);
             echo json_encode(['success' => true, 'data' => $result]);
